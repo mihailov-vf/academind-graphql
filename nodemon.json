@@ -1,0 +1,5 @@
+{
+    "env": {
+        "MONGO_URI": "mongodb://tester:tester!1@ds153577.mlab.com:53577/graphql-test"
+    }
+}
