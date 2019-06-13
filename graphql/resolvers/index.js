@@ -2,6 +2,7 @@ const bcryptjs = require('bcryptjs');
 
 const Event = require('../../models/event');
 const User = require('../../models/User');
+const Booking = require('../../models/Booking');
 
 const buildEvent = eventData => {
     return {
@@ -21,6 +22,16 @@ const events = async eventIds => {
     }
 };
 
+const singleEvent = async eventId => {
+    try {
+        const event = await Event.findById(eventId);
+
+        return buildEvent(event);
+    } catch (err) {
+        throw err;
+    }
+}
+
 const buildUser = userData => {
     return { ...userData._doc, createdEvents: events.bind(this, userData._doc.createdEvents) };
 };
@@ -35,6 +46,16 @@ const user = async userId => {
     }
 };
 
+const buildBooking = async bookingData => {
+    return {
+        ...bookingData._doc,
+        user: user.bind(this, bookingData._doc.user),
+        event: singleEvent.bind(this, bookingData._doc.event),
+        createdAt: new Date(bookingData.createdAt).toISOString(),
+        updatedAt: new Date(bookingData.updatedAt).toISOString()
+    };
+};
+
 module.exports = {
     events: async () => {
         try {
@@ -42,6 +63,14 @@ module.exports = {
             return eventList.map(buildEvent);
         }
         catch (err) {
+            throw err;
+        }
+    },
+    bookings: async () => {
+        try {
+            const bookings = await Booking.find();
+            return bookings.map(buildBooking);
+        } catch (err) {
             throw err;
         }
     },
@@ -96,4 +125,27 @@ module.exports = {
             throw err;
         }
     },
+    bookingEvent: async args => {
+        const event = await Event.findOne({ _id: args.eventId });
+
+        const booking = new Booking({
+            user: '5cf41342c6981d48e8ea496e',
+            event
+        });
+
+        const result = await booking.save();
+
+        return buildBooking(result);
+    },
+    cancelBooking: async args => {
+        try {
+            const booking = await Booking.findById(args.bookingId).populate('event');
+            const event = buildEvent(booking.event);
+
+            await Booking.deleteOne({ _id: args.bookingId });
+            return event;
+        } catch (err) {
+            throw err;
+        }
+    }
 };
